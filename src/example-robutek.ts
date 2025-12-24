@@ -1,16 +1,19 @@
 import * as wifi from "wifi";
 import { UdpSocket } from "udp";
+import * as gpio from "gpio";
 import { currentIp } from "wifi";
 import { Packet, PacketParser } from "./libs/lorris-packet.js";
 import { createRobutek } from "./libs/robutek.js"
 const robutek = createRobutek("V2");
 
 let stopTimeout = null;
+gpio.pinMode(1, gpio.PinMode.INPUT);
 
 enum Command {
 	CMD_SET_PARAMS = 0,
 	CMD_ROBOT_NEC_L = 1,
 	CMD_ROBOT_NEC_R = 2,
+	CMD_ROBOT_BUTTON = 3
 }
 
 const gParser = new PacketParser();
@@ -21,15 +24,34 @@ let clientPort: number | null = null;
 function processPacket(pkt: Packet): void {
 	switch (pkt.command()) {
 		case Command.CMD_SET_PARAMS:
-			// gParams.tickRateMs = pkt.readUint32();
-			// gParams.step = pkt.readDouble();
-			// console.log(`Params updated: tickRate=${gParams.tickRateMs}ms, step=${gParams.step}`);
-			// // Restart interval with new tick rate
-			// if (intervalId !== null) {
-			// 	clearInterval(intervalId);
-			// 	intervalId = startDataInterval();
-			// }
-			break;
+			const dir = pkt.readUint8();
+			switch (dir) {
+				case 0:
+					console.log("Stop");
+					robutek.leftMotor.setSpeed(0);
+					robutek.rightMotor.setSpeed(0);
+					break;
+				case 1: // w
+					console.log("Forward");
+					robutek.leftMotor.setSpeed(100);
+					robutek.rightMotor.setSpeed(100);
+					break;
+				case 2: // a
+					console.log("Left");
+					robutek.leftMotor.setSpeed(-100);
+					robutek.rightMotor.setSpeed(100);
+					break;
+				case 3: // s
+					console.log("Backward");
+					robutek.leftMotor.setSpeed(-100);
+					robutek.rightMotor.setSpeed(-100);
+					break;
+				case 4: // d
+					console.log("Right");
+					robutek.leftMotor.setSpeed(100);
+					robutek.rightMotor.setSpeed(-100);
+					break;
+			}
 	}
 }
 
@@ -120,8 +142,8 @@ while (clientAddress === null) {
 let speedLimiter = 0.5
 let speedMul = 500;
 
-// robutek.leftMotor.move();
-// robutek.rightMotor.move();
+robutek.leftMotor.move();
+robutek.rightMotor.move();
 
 const pkt = new Packet();
 
@@ -138,5 +160,10 @@ setInterval(() => {
 	// Send COS packet
 	pkt.reset(Command.CMD_ROBOT_NEC_R);
 	pkt.writeInt32(robutek.rightMotor.getPosition());
+	socket.write(pkt.rawBuffer(), clientAddress, clientPort);
+
+	// Send button state
+	pkt.reset(Command.CMD_ROBOT_BUTTON);
+	pkt.writeUint8(gpio.read(1));
 	socket.write(pkt.rawBuffer(), clientAddress, clientPort);
 }, 100);

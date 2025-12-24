@@ -54,15 +54,21 @@ export class Packet {
     }
 
     writeInt8(val: number): void {
-        this.writeUint8(val);
+        // Convert signed to unsigned (two's complement)
+        const unsigned = val < 0 ? val + 256 : val;
+        this.writeUint8(unsigned);
     }
 
     writeInt16(val: number): void {
-        this.writeUint16(val);
+        // Convert signed to unsigned (two's complement)
+        const unsigned = val < 0 ? val + 65536 : val;
+        this.writeUint16(unsigned);
     }
 
     writeInt32(val: number): void {
-        this.writeUint32(val);
+        // Convert signed to unsigned (two's complement)
+        const unsigned = val < 0 ? (val + 4294967296) >>> 0 : val;
+        this.writeUint32(unsigned);
     }
 
     writeFloat32(val: number): void {
