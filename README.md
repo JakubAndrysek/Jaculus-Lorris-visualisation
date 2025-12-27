@@ -1,5 +1,8 @@
 # Jaculus-Lorris-visualisation
 
+ESP32 JavaScript interpreter connected to PC visualization software via UDP for real-time sensor data display.
+
+
 ![Jaculus-Lorris-visualisation](./media/lorris-sin.png)
 
 This is proof-of-concept connection between Jaculus JS interpreter on ESP32 and Lorris visualisation software running on PC. It allows to configure binary based protocol and send data from ESP32 to Lorris for visualisation.
